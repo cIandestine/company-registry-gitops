@@ -8,14 +8,14 @@ secretName: company-registry-secrets
 image:
   # ECR URL: <account-id>.dkr.ecr.<region>.amazonaws.com/<repo-name>
   repository: "851307004775.dkr.ecr.ap-south-1.amazonaws.com/company-registry"
-  tag: latest           # updated automatically by CI on every release
+  tag: "1.1.0"
   pullPolicy: IfNotPresent
 
 nginx:
   replicaCount: 1
   image:
     repository: "851307004775.dkr.ecr.ap-south-1.amazonaws.com/company-registry-nginx"
-    tag: latest           # updated automatically by CI on every release
+    tag: "1.1.0"
     pullPolicy: IfNotPresent
   resources:
     requests:
