@@ -1,0 +1,56 @@
+namespace: company-registry
+
+# Secret created by the CI deploy step before helm runs.
+# Contains: MONGO_ROOT_PASSWORD, MONGO_APP_PASSWORD, JWT_SECRET,
+#           ADMIN_PASSWORD, VIEWER_PASSWORD
+secretName: company-registry-secrets
+
+image:
+  # ECR URL: <account-id>.dkr.ecr.<region>.amazonaws.com/<repo-name>
+  repository: "851307004775.dkr.ecr.ap-south-1.amazonaws.com/company-registry"
+  tag: latest           # updated automatically by CI on every release
+  pullPolicy: IfNotPresent
+
+nginx:
+  replicaCount: 1
+  image:
+    repository: "851307004775.dkr.ecr.ap-south-1.amazonaws.com/company-registry-nginx"
+    tag: latest           # updated automatically by CI on every release
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+api:
+  replicaCount: 1
+  port: 8000
+  dbName: person_db
+  adminUsername: admin
+  viewerUsername: viewer
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 300m
+      memory: 512Mi
+
+mongodb:
+  image: mongo:6
+  port: 27017
+  dbName: person_db
+  rootUsername: root
+  appUsername: appuser
+  storage: 5Gi
+  storageClass: ebs-csi-gp3
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi

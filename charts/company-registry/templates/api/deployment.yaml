@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "company-registry.api.name" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ include "company-registry.api.name" . }}
+    {{- include "company-registry.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.api.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "company-registry.api.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "company-registry.api.name" . }}
+    spec:
+      containers:
+        - name: api
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.api.port }}
+          env:
+            - name: DB_NAME
+              value: {{ .Values.api.dbName }}
+            - name: ADMIN_USERNAME
+              value: {{ .Values.api.adminUsername }}
+            - name: VIEWER_USERNAME
+              value: {{ .Values.api.viewerUsername }}
+            # Pulled explicitly from the secret so $(MONGO_APP_PASSWORD) can be
+            # referenced in MONGODB_URI below (envFrom vars are not available for substitution)
+            - name: MONGO_APP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: MONGO_APP_PASSWORD
+            - name: MONGODB_URI
+              value: "mongodb://{{ .Values.mongodb.appUsername }}:$(MONGO_APP_PASSWORD)@{{ include "company-registry.mongodb.name" . }}:{{ .Values.mongodb.port }}/{{ .Values.api.dbName }}?authSource={{ .Values.api.dbName }}"
+          envFrom:
+            - secretRef:
+                name: {{ .Values.secretName }}
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.api.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.api.port }}
+            initialDelaySeconds: 20
+            periodSeconds: 30

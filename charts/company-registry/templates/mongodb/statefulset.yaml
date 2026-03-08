@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "company-registry.mongodb.name" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ include "company-registry.mongodb.name" . }}
+    {{- include "company-registry.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "company-registry.mongodb.name" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "company-registry.mongodb.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "company-registry.mongodb.name" . }}
+    spec:
+      containers:
+        - name: mongodb
+          image: {{ .Values.mongodb.image }}
+          ports:
+            - containerPort: {{ .Values.mongodb.port }}
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: {{ .Values.mongodb.rootUsername }}
+            - name: MONGO_INITDB_DATABASE
+              value: {{ .Values.mongodb.dbName }}
+            - name: MONGO_APP_USER
+              value: {{ .Values.mongodb.appUsername }}
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: MONGO_ROOT_PASSWORD
+            - name: MONGO_APP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: MONGO_APP_PASSWORD
+          resources:
+            {{- toYaml .Values.mongodb.resources | nindent 12 }}
+          volumeMounts:
+            - name: mongodb-data
+              mountPath: /data/db
+            - name: mongo-init
+              mountPath: /docker-entrypoint-initdb.d/mongo-init.js
+              subPath: mongo-init.js
+          readinessProbe:
+            exec:
+              command: ["mongosh", "--eval", "db.adminCommand('ping')"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command: ["mongosh", "--eval", "db.adminCommand('ping')"]
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+      volumes:
+        - name: mongo-init
+          configMap:
+            name: {{ include "company-registry.mongodb.name" . }}-init
+  volumeClaimTemplates:
+    - metadata:
+        name: mongodb-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.mongodb.storageClass }}
+        resources:
+          requests:
+            storage: {{ .Values.mongodb.storage }}
