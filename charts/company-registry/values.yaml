@@ -8,14 +8,14 @@ secretName: company-registry-secrets
 image:
   # ECR URL: <account-id>.dkr.ecr.<region>.amazonaws.com/<repo-name>
   repository: "851307004775.dkr.ecr.ap-south-1.amazonaws.com/company-registry"
-  tag: "1.1.1"
+  tag: "1.1.2"
   pullPolicy: IfNotPresent
 
 nginx:
   replicaCount: 1
   image:
     repository: "851307004775.dkr.ecr.ap-south-1.amazonaws.com/company-registry-nginx"
-    tag: "1.1.1"
+    tag: "1.1.2"
     pullPolicy: IfNotPresent
   resources:
     requests:
